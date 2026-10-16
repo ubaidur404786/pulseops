@@ -2,21 +2,8 @@
 
 **Finds which service broke, explains why, and asks a human before fixing anything.**
 
-![PulseOps dashboard: a database error burst, traced to its root cause](docs/figures/dashboard.png)
-
-<sub>Dark theme shown. Switch to light in the sidebar ([screenshot](docs/figures/dashboard-light.png)). Open a scenario directly with a link like `?fault=error_burst&service=database&theme=light`.</sub>
-
-> **Status: work in progress.** The core pipeline works and is measured. Live demo,
-> demo video and real Prometheus data are still being added.
-
-- **Live app:** https://pulseops-ecck.onrender.com (free plan: first load can take ~1 minute)
-
-**Using the live app (1 minute):** pick a **Fault** and a **Broken service** in the
-sidebar (try `error_burst` + `database`). Read the KPI cards and the service-health row,
-check the **Root cause** tab for the reasons, then **Approve** or **Reject** the proposed
-fix in the **Incident** tab. The "Truth" box shows the real answer, so you can check
-PulseOps. A full guide is built into the app.
-- **Demo video:** not recorded yet
+> **Status: work in progress.** The core pipeline works and is measured. Demo video and
+> real Prometheus data are still being added.
 
 ## The problem
 
@@ -25,10 +12,40 @@ at once. The payments service fails, so orders fail, so the gateway fails, and t
 on-call engineer gets three alerts that all look like "the problem". A lot of the
 incident time goes into working out *which* service actually started it.
 
+## The solution
+
+1. **Watch metrics**: latency, error rate and CPU for every service, every minute.
+2. **Spot anomalies** with a z-score check: the first 30 minutes give each metric's
+   normal mean and spread; a value more than 4 standard deviations away for 3 minutes
+   in a row is an anomaly, so one-off blips are ignored. No training needed.
+3. **Rank the likely root cause** with three rules anyone can check:
+   - none of the services it calls look broken,
+   - it went wrong first,
+   - it was deployed just before the trouble started.
+
+   Every score comes with a written reason. Rules, not an LLM, because they give the
+   same answer every time, can be unit-tested, and can't invent causes.
+4. **Propose a fix** from that service's runbook.
+5. **Wait for a human.** The engineer approves or rejects, and every decision is
+   written to an audit log. Nothing runs on its own.
+
+## Live app
+
+**https://pulseops-ecck.onrender.com** (free plan: the first load can take ~1 minute)
+
+![PulseOps dashboard: a database error burst, traced to its root cause](docs/figures/dashboard.png)
+
+**How to use it:** pick a **Fault type** and a **Broken service** in the sidebar (try
+`error_burst` on `database`). The summary tiles and the service status table show what
+PulseOps found; the **Root cause** tab gives the reasons; **Response** lets you approve
+or reject the fix. The "Ground truth" box shows the real answer, so you can check
+PulseOps. A step-by-step guide is built into the app, the sidebar switches between dark
+and light ([light screenshot](docs/figures/dashboard-light.png)), and a link like
+`?fault=error_burst&service=database&theme=light` opens a scenario directly.
+
 ## The data
 
 > Full walk-through, from zero: [notebooks/01_data.ipynb](notebooks/01_data.ipynb).
-> Read that one notebook and the data part is fully covered.
 
 **The system.** A small online shop made of 5 services. An arrow means "calls":
 
@@ -51,39 +68,24 @@ broken (red). It ramps up over a few minutes and *stays* up, unlike a short blip
 ![Before vs after](docs/figures/02_before_after.png)
 
 **The domino effect.** Everything that calls the database goes red too, a bit weaker
-and a bit later. Five alarms, one real cause. That's the problem PulseOps solves:
+and a bit later. Five alarms, one real cause:
 
 ![Domino effect](docs/figures/03_domino.png)
 
-**Where the data comes from.** In this version, a simulator
-([`simulator.py`](src/pulseops/simulator.py)) generates it: a healthy table, then a
-fault added on top (4 kinds: slow queries, error burst, CPU saturation, bad deploy)
-with random strength. Because we inject the fault, we always know the true root cause,
-so accuracy can be measured. In a real company the same table would come from
-**Prometheus** (each service exposes metrics, Prometheus collects them every 15 s) and
-deploy events from the CI/CD tool. That's the next phase, not built yet.
+**Where the data comes from.** A simulator ([`simulator.py`](src/pulseops/simulator.py))
+makes a healthy table, then adds a fault on top (slow queries, error burst, CPU
+saturation or bad deploy) with random strength. Because the fault is injected, the true
+root cause is always known, so accuracy can be measured. In a real company the same
+table would come from **Prometheus** and deploy events from the CI/CD tool. That's the
+next phase, not built yet.
 
-Sample files: [`data/`](data/) (`healthy.csv`, one CSV per fault kind, `labels.csv`
-with the true answer for each). Rebuild them and the figures with:
+Sample files are in [`data/`](data/) (`labels.csv` holds the true answer for each).
+Rebuild them and the figures with:
 
 ```bash
 uv sync --group notebook
 uv run jupyter nbconvert --to notebook --execute --inplace notebooks/01_data.ipynb
 ```
-
-## What PulseOps does
-
-1. **Watches metrics** (latency, error rate, CPU) for 5 services.
-2. **Spots anomalies** with a simple z-score check: a metric has to stay far from its
-   normal level for 3 minutes in a row, so one-off blips are ignored.
-3. **Ranks the likely root cause** with three rules anyone can check:
-   - none of the services it calls look broken,
-   - it went wrong first,
-   - it was deployed just before the trouble started.
-   Every point comes with a written reason.
-4. **Proposes a fix** from that service's runbook.
-5. **Waits for a human.** The engineer approves or rejects, and every decision is
-   written to an audit log. Nothing runs on its own.
 
 ## Results
 
@@ -99,15 +101,12 @@ and spread to the calling services with a 0–2 minute delay.
 | bad_deploy | 100 | 100% | 0.8 | 100% | 100% |
 | all | 400 | 98% | 1.7 | 98% | 98% |
 
-False alarms on 100 healthy runs: 0%
+False alarms on 100 healthy runs: 0%. Reproduce with `uv run python -m pulseops.evaluate`.
 
-Reproduce with `uv run python -m pulseops.evaluate`.
-
-**Read these numbers carefully.** They come from a simulator where faults spread
-cleanly along a known service map, so the ranking rules have an easy job. The misses
-are mild CPU faults that never rise above the noise. Real systems are messier
-(retries, shared infrastructure, missing metrics), so expect lower accuracy there.
-That's the main limitation, listed below.
+**Read these numbers carefully.** Faults spread cleanly along a known service map, so
+the ranking rules have an easy job. The misses are mild CPU faults that never rise above
+the noise. Real systems are messier (retries, shared infrastructure, missing metrics),
+so expect lower accuracy there.
 
 ## Architecture
 
@@ -122,16 +121,16 @@ That's the main limitation, listed below.
 | `report.py` | writes the incident report and picks the runbook action |
 | `audit.py` | logs approve / reject decisions |
 | `evaluate.py` | runs hundreds of scenarios and measures accuracy |
-| `app.py` | Streamlit UI |
+| `app.py`, `ui.py` | Streamlit dashboard and its styling |
 
-Deployment: GitHub Actions runs lint, tests and the accuracy gate, then builds the
-Docker image; Render builds the same Dockerfile ([`render.yaml`](render.yaml)) and hosts
-the app.
+**Delivery.** GitHub Actions runs lint, tests and a quality gate
+(`tests/test_evaluate.py` fails the build if accuracy drops), then builds the Docker
+image. Render builds the same Dockerfile ([`render.yaml`](render.yaml)) and hosts the app.
 
 More detail: [docs/architecture.md](docs/architecture.md) ·
 design choices: [docs/decisions.md](docs/decisions.md)
 
-## Quickstart
+## Run it locally
 
 Needs Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
@@ -149,51 +148,29 @@ docker build -t pulseops .
 docker run -p 8501:8501 pulseops
 ```
 
-Then open http://localhost:8501, pick a fault and a service in the sidebar, and check
-PulseOps's answer against the "Truth" box.
-
-Run the tests and the evaluation:
+Tests and evaluation:
 
 ```bash
 uv run pytest
 uv run python -m pulseops.evaluate
 ```
 
-### Optional: LLM-written summary
-
-The report is a plain template by default. If you have [Ollama](https://ollama.com)
-running locally, set `OLLAMA_MODEL` (see `.env.example`) and a local model will rewrite
-the report in friendlier words. It only gets the evidence PulseOps found; it doesn't
-choose the root cause. *This path hasn't been tested yet.*
-
-## How it works
-
-**Why z-scores?** For each metric, the first 30 minutes give a normal mean and
-standard deviation. A value more than 4 standard deviations away for 3 minutes
-straight is an anomaly. It's easy to explain and needs no training.
-
-**Why rules instead of an LLM for the root cause?** Rules give the same answer every
-time, can be unit-tested, and every score has a reason the engineer can check. An LLM
-picking the root cause would be hard to evaluate and could invent causes.
-
-**Why a simulator?** To measure root-cause accuracy you need to know the true root
-cause. The simulator gives hundreds of labelled incidents in seconds.
-
-**Quality gate:** `tests/test_evaluate.py` runs a smaller evaluation in CI and fails
-the build if detection or top-1 accuracy drops below the set thresholds.
+**Optional LLM summary.** With [Ollama](https://ollama.com) running locally, set
+`OLLAMA_MODEL` (see `.env.example`) and a local model rewrites the report in friendlier
+words. It only gets the evidence PulseOps found; it doesn't choose the root cause.
 
 ## Known limitations
 
-- **Simulated data only.** No real services or Prometheus yet. Faults spread cleanly
-  along the service map, which makes ranking easier than in real life.
+- **Simulated data only.** No real services or Prometheus yet.
 - One fault at a time. Two overlapping incidents aren't handled.
 - The detector uses a fixed baseline. It can't handle daily traffic patterns.
 - Runbooks are per service, not per fault type, so the proposed action is sometimes
   generic.
 - Approving an action only logs it. Nothing is actually executed.
-- The local-LLM summary is optional and untested.
-- On Render's free plan the app sleeps when idle (first load takes ~1 minute) and the
-  audit log resets on every redeploy.
+- The local-LLM summary hasn't been tested yet.
+- On Render's free plan the app sleeps when idle and the audit log resets on every
+  redeploy.
+- Demo video not recorded yet.
 
 ## Contact
 
