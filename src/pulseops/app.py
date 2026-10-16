@@ -28,11 +28,15 @@ FAULT_HELP = {
 }
 
 st.set_page_config(page_title="PulseOps", layout="wide")
-st.markdown(ui.CSS, unsafe_allow_html=True)
 
 
-def sidebar() -> tuple[str | None, str, int]:
+def sidebar() -> tuple[str | None, str, int, str]:
     with st.sidebar:
+        theme = st.segmented_control(
+            "Theme",
+            ["Dark", "Light"],
+            default="Light" if st.query_params.get("theme") == "light" else "Dark",
+        )
         st.markdown("#### Scenario")
         st.caption("Choose what breaks. Everything below updates instantly.")
         # Optional link presets, e.g. ?fault=error_burst&service=database, so a scenario
@@ -74,7 +78,9 @@ def sidebar() -> tuple[str | None, str, int]:
         )
         st.caption("Demo with simulated data · work in progress")
     fault_kind = None if kind == HEALTHY else kind
-    return fault_kind, service, int(seed)
+    # Clicking the selected option again clears it, so fall back to dark.
+    mode = "light" if theme == "Light" else "dark"
+    return fault_kind, service, int(seed), mode
 
 
 def status_of(service: str, anomalies, suspects) -> str:
@@ -115,7 +121,8 @@ def show_guide() -> None:
         )
 
 
-fault_kind, service, seed = sidebar()
+fault_kind, service, seed, mode = sidebar()
+st.markdown(ui.css(mode), unsafe_allow_html=True)
 scenario = make_scenario(fault_kind, service, seed)
 anomalies = detect(scenario.metrics)
 suspects = rank_suspects(anomalies, scenario.deploys)
@@ -134,7 +141,7 @@ items = [
         "Status",
         "Incident" if anomalies else "Healthy",
         "anomalies found" if anomalies else "no anomalies",
-        "#f87171" if anomalies else "#4ade80",
+        "red" if anomalies else "green",
     ),
     ui.tile("activity", "Anomalous metrics", str(len(anomalies)), "of 15 watched"),
     ui.tile(
@@ -155,7 +162,7 @@ if scenario.fault:
             "Matches truth",
             "Yes" if correct else "No",
             f"real cause: {scenario.fault.service}",
-            "#4ade80" if correct else "#f87171",
+            "green" if correct else "red",
         )
     )
 else:
@@ -165,7 +172,7 @@ else:
             "False alarm",
             "Yes" if anomalies else "No",
             "healthy run",
-            "#f87171" if anomalies else "#4ade80",
+            "red" if anomalies else "green",
         )
     )
 st.markdown(ui.tiles(items), unsafe_allow_html=True)
@@ -204,7 +211,9 @@ with tab_metrics:
             st.markdown(f"**{METRIC_LABELS.get(metric, metric)}**")
             columns = [column(s, metric) for s in SERVICES]
             chart_data = scenario.metrics[columns].rename(columns=lambda c: c.split(".")[0])
-            st.line_chart(chart_data, x_label="minute", y_label=metric, height=240)
+            st.altair_chart(
+                ui.line_chart(chart_data, metric, mode), theme=None, use_container_width=True
+            )
     if scenario.deploys:
         st.markdown(ui.section("rocket", "Deploys"), unsafe_allow_html=True)
         st.dataframe(

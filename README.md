@@ -4,6 +4,8 @@
 
 ![PulseOps dashboard: a database error burst, traced to its root cause](docs/figures/dashboard.png)
 
+<sub>Dark theme shown. Switch to light in the sidebar ([screenshot](docs/figures/dashboard-light.png)). Open a scenario directly with a link like `?fault=error_burst&service=database&theme=light`.</sub>
+
 > **Status: work in progress.** The core pipeline works and is measured. Live demo,
 > demo video and real Prometheus data are still being added.
 

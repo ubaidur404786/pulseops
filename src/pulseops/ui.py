@@ -6,6 +6,9 @@ Icon shapes are from Lucide (https://lucide.dev, ISC licence): 24x24, stroked li
 
 import html
 
+import altair as alt
+import pandas as pd
+
 ICONS = {
     "activity": '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
     "alert": '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 '
@@ -27,78 +30,156 @@ ICONS = {
     "pulse": '<path d="M3 12h4l2-5 4 10 2-5h6"/>',
 }
 
-# Status -> (label, text colour, background colour)
-STATUS = {
-    "root": ("Root cause", "#fca5a5", "#450a0a"),
-    "affected": ("Degraded", "#fcd34d", "#422006"),
-    "ok": ("Operational", "#86efac", "#052e16"),
+# Two palettes. Every colour on the page comes from here, so switching theme is one lookup.
+PALETTES = {
+    "dark": {
+        "bg": "#0b1220",
+        "panel": "#111a2e",
+        "border": "#1e293b",
+        "text": "#e2e8f0",
+        "strong": "#f1f5f9",
+        "muted": "#94a3b8",
+        "accent": "#38bdf8",
+        "red": "#fca5a5",
+        "red_bg": "#450a0a",
+        "amber": "#fcd34d",
+        "amber_bg": "#422006",
+        "green": "#86efac",
+        "green_bg": "#052e16",
+        "num_bg": "#0c4a6e",
+        "num": "#bae6fd",
+    },
+    "light": {
+        "bg": "#ffffff",
+        "panel": "#f8fafc",
+        "border": "#e2e8f0",
+        "text": "#1e293b",
+        "strong": "#0f172a",
+        "muted": "#64748b",
+        "accent": "#0284c7",
+        "red": "#b91c1c",
+        "red_bg": "#fee2e2",
+        "amber": "#b45309",
+        "amber_bg": "#fef3c7",
+        "green": "#15803d",
+        "green_bg": "#dcfce7",
+        "num_bg": "#e0f2fe",
+        "num": "#0369a1",
+    },
 }
 
-CSS = """
+# Status -> (label, colour key). The key picks e.g. "red" and "red_bg" from the palette.
+STATUS = {
+    "root": ("Root cause", "red"),
+    "affected": ("Degraded", "amber"),
+    "ok": ("Operational", "green"),
+}
+
+# Light mode also has to repaint Streamlit's own surfaces, because the base theme
+# in .streamlit/config.toml is dark.
+LIGHT_OVERRIDES = """
+[data-testid="stApp"], [data-testid="stHeader"] {background:#ffffff; color:#1e293b;}
+[data-testid="stSidebar"] {background:#f1f5f9;}
+[data-testid="stSidebar"] *, [data-testid="stMain"] p, [data-testid="stMain"] li,
+[data-testid="stMain"] label, [data-testid="stMarkdownContainer"],
+[data-testid="stCaptionContainer"], [data-testid="stWidgetLabel"] {color:#1e293b;}
+[data-testid="stCaptionContainer"] {opacity:.75;}
+[data-baseweb="select"] > div, [data-testid="stNumberInputContainer"],
+[data-testid="stNumberInput"] input {background:#ffffff; color:#1e293b;
+  border-color:#cbd5e1;}
+[data-testid="stExpander"] details, [data-testid="stVerticalBlockBorderWrapper"] {
+  background:#ffffff; border-color:#e2e8f0;}
+[data-testid="stExpander"] summary, [data-testid="stExpander"] summary * {color:#1e293b;}
+button[data-baseweb="tab"] p {color:#334155;}
+[data-testid="stSelectbox"] div:has(> input), [role="listbox"], [role="option"] {
+  background:#ffffff; color:#1e293b;}
+[data-testid="stButtonGroup"] button[aria-checked="false"] {background:#ffffff;
+  color:#334155; border-color:#cbd5e1;}
+"""
+
+CSS_TEMPLATE = """
 <style>
 .block-container, [data-testid="stMainBlockContainer"] {padding-top: 4.5rem; max-width: 1280px;}
 #MainMenu, footer {visibility: hidden;}
 .po-top {display:flex; align-items:center; justify-content:space-between;
-  border-bottom:1px solid #1e293b; padding-bottom:.8rem; margin-bottom:1rem;}
+  border-bottom:1px solid {border}; padding-bottom:.8rem; margin-bottom:1rem;}
 .po-brand {display:flex; align-items:center; gap:.6rem; font-weight:700; font-size:1.25rem;
-  color:#f1f5f9;}
-.po-crumb {color:#94a3b8; font-size:.85rem; font-weight:400;}
+  color:{strong};}
+.po-brand svg, .po-section svg {color:{accent};}
+.po-crumb {color:{muted}; font-size:.85rem; font-weight:400;}
 .po-pill {display:inline-flex; align-items:center; gap:.35rem; padding:.2rem .65rem;
   border-radius:999px; font-size:.78rem; font-weight:600;}
+.po-red {color:{red}; background:{red_bg};}
+.po-amber {color:{amber}; background:{amber_bg};}
+.po-green {color:{green}; background:{green_bg};}
+.po-dot.po-red, .po-dot.po-amber, .po-dot.po-green {background:currentColor;}
 .po-tiles {display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:.75rem;
   margin-bottom:1rem;}
 @media (max-width: 900px) {.po-tiles {grid-template-columns:repeat(2, minmax(0,1fr));}}
-.po-tile {border:1px solid #1e293b; border-radius:10px; padding:.8rem .9rem; background:#111a2e;}
-.po-tile-head {display:flex; align-items:center; gap:.4rem; color:#94a3b8; font-size:.75rem;
+.po-tile {border:1px solid {border}; border-radius:10px; padding:.8rem .9rem; background:{panel};}
+.po-tile-head {display:flex; align-items:center; gap:.4rem; color:{muted}; font-size:.75rem;
   text-transform:uppercase; letter-spacing:.04em; font-weight:600;}
-.po-tile-value {font-size:1.45rem; font-weight:700; color:#f1f5f9; margin-top:.3rem;}
-.po-tile-sub {font-size:.78rem; color:#94a3b8;}
-.po-section {display:flex; align-items:center; gap:.45rem; font-weight:650; color:#f1f5f9;
+.po-tile-head.po-red, .po-tile-head.po-green {background:none;}
+.po-tile-value {font-size:1.45rem; font-weight:700; color:{strong}; margin-top:.3rem;}
+.po-tile-sub {font-size:.78rem; color:{muted};}
+.po-section {display:flex; align-items:center; gap:.45rem; font-weight:650; color:{strong};
   font-size:1rem; margin:.4rem 0 .5rem;}
 .po-table {width:100%; border-collapse:collapse; font-size:.88rem; margin-bottom:1rem;}
-.po-table th {text-align:left; color:#94a3b8; font-weight:600; font-size:.75rem;
-  text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid #1e293b;
+.po-table th {text-align:left; color:{muted}; font-weight:600; font-size:.75rem;
+  text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid {border};
   padding:.5rem .6rem;}
-.po-table td {border-bottom:1px solid #1e293b; padding:.55rem .6rem; color:#e2e8f0;}
+.po-table td {border-bottom:1px solid {border}; padding:.55rem .6rem; color:{text};}
 .po-dot {display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:.5rem;}
 .po-step {display:flex; gap:.7rem; margin:.45rem 0;}
-.po-num {flex:none; width:22px; height:22px; border-radius:50%; background:#0c4a6e;
-  color:#bae6fd; font-size:.75rem; font-weight:700; display:flex; align-items:center;
+.po-num {flex:none; width:22px; height:22px; border-radius:50%; background:{num_bg};
+  color:{num}; font-size:.75rem; font-weight:700; display:flex; align-items:center;
   justify-content:center;}
+{overrides}
 </style>
 """
 
 
-def icon(name: str, color: str = "currentColor", size: int = 16) -> str:
-    """Inline SVG for one icon."""
+def css(mode: str) -> str:
+    """The page's <style> block for "dark" or "light"."""
+    style = CSS_TEMPLATE
+    for key, value in PALETTES[mode].items():
+        style = style.replace("{" + key + "}", value)
+    return style.replace("{overrides}", LIGHT_OVERRIDES if mode == "light" else "")
+
+
+def icon(name: str, size: int = 16) -> str:
+    """Inline SVG for one icon. It takes the text colour of whatever it sits in."""
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" '
-        f'viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" '
+        f'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
         f'stroke-linecap="round" stroke-linejoin="round">{ICONS[name]}</svg>'
     )
 
 
-def pill(text: str, fg: str, bg: str, icon_name: str | None = None) -> str:
-    inner = (icon(icon_name, fg, 13) if icon_name else "") + html.escape(text)
-    return f'<span class="po-pill" style="color:{fg};background:{bg}">{inner}</span>'
+def pill(text: str, tone: str, icon_name: str | None = None) -> str:
+    """tone: red, amber or green."""
+    inner = (icon(icon_name, 13) if icon_name else "") + html.escape(text)
+    return f'<span class="po-pill po-{tone}">{inner}</span>'
 
 
 def top_bar(incident: str, is_incident: bool) -> str:
     status = (
-        pill("Active incident", "#fca5a5", "#450a0a", "alert")
+        pill("Active incident", "red", "alert")
         if is_incident
-        else pill("All systems operational", "#86efac", "#052e16", "check")
+        else pill("All systems operational", "green", "check")
     )
     return (
-        f'<div class="po-top"><div class="po-brand">{icon("pulse", "#38bdf8", 26)}PulseOps'
+        f'<div class="po-top"><div class="po-brand">{icon("pulse", 26)}PulseOps'
         f'<span class="po-crumb">/ Incidents / {html.escape(incident)}</span></div>'
         f"{status}</div>"
     )
 
 
-def tile(icon_name: str, label: str, value: str, sub: str = "", color: str = "#94a3b8") -> str:
+def tile(icon_name: str, label: str, value: str, sub: str = "", tone: str = "") -> str:
+    """One summary card. tone ("red"/"green") colours the label line; empty = grey."""
+    tone_class = f" po-{tone}" if tone else ""
     return (
-        f'<div class="po-tile"><div class="po-tile-head">{icon(icon_name, color, 14)}'
+        f'<div class="po-tile"><div class="po-tile-head{tone_class}">{icon(icon_name, 14)}'
         f'{html.escape(label)}</div><div class="po-tile-value">{html.escape(value)}</div>'
         f'<div class="po-tile-sub">{html.escape(sub) or "&nbsp;"}</div></div>'
     )
@@ -109,18 +190,18 @@ def tiles(items: list[str]) -> str:
 
 
 def section(icon_name: str, title: str) -> str:
-    return f'<div class="po-section">{icon(icon_name, "#38bdf8", 18)}{html.escape(title)}</div>'
+    return f'<div class="po-section">{icon(icon_name, 18)}{html.escape(title)}</div>'
 
 
 def service_table(rows: list[dict]) -> str:
     """rows: service, status (root/affected/ok), calls, anomalies."""
     body = ""
     for row in rows:
-        label, fg, bg = STATUS[row["status"]]
+        label, tone = STATUS[row["status"]]
         body += (
-            f'<tr><td><span class="po-dot" style="background:{fg}"></span>'
+            f'<tr><td><span class="po-dot po-{tone}"></span>'
             f"<b>{html.escape(row['service'])}</b></td>"
-            f"<td>{pill(label, fg, bg)}</td>"
+            f"<td>{pill(label, tone)}</td>"
             f"<td>{html.escape(row['calls'])}</td>"
             f"<td>{html.escape(row['anomalies'])}</td></tr>"
         )
@@ -136,4 +217,33 @@ def steps(items: list[str]) -> str:
     return "".join(
         f'<div class="po-step"><div class="po-num">{n}</div><div>{text}</div></div>'
         for n, text in enumerate(items, start=1)
+    )
+
+
+def line_chart(data: pd.DataFrame, y_label: str, mode: str) -> alt.Chart:
+    """One line per service over time, coloured to match the current theme.
+
+    `data` has the minute as its index and one column per service.
+    """
+    p = PALETTES[mode]
+    long = data.reset_index(names="minute").melt("minute", var_name="service", value_name="value")
+    return (
+        alt.Chart(long, height=240)
+        .mark_line(strokeWidth=1.4)
+        .encode(
+            x=alt.X("minute:Q", title="minute"),
+            y=alt.Y("value:Q", title=y_label),
+            color=alt.Color("service:N", legend=alt.Legend(orient="bottom", title=None, columns=3)),
+            tooltip=["minute", "service", alt.Tooltip("value:Q", format=".3f")],
+        )
+        .configure(background=p["panel"])
+        .configure_axis(
+            labelColor=p["muted"],
+            titleColor=p["muted"],
+            gridColor=p["border"],
+            domainColor=p["border"],
+            tickColor=p["border"],
+        )
+        .configure_legend(labelColor=p["text"])
+        .configure_view(stroke=None)
     )
