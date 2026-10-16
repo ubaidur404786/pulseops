@@ -1,0 +1,5 @@
+file                       , kind          , root_cause, start_minute, severity, deploys
+slow_queries_database.csv  , slow_queries  , database  ,           49,     0.99, payments@106
+error_burst_database.csv   , error_burst   , database  ,           49,     0.99, payments@106
+cpu_saturation_database.csv, cpu_saturation, database  ,           49,     0.99, payments@106
+bad_deploy_database.csv    , bad_deploy    , database  ,           49,     0.99, payments@106; database@45

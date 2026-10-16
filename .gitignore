@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.env
+audit_log.jsonl
+results/
+.claude/
+debug_audit_log.jsonl
+private/
+CLAUDE.md

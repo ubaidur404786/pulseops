@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 540" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <!-- Layout grid: 5 columns, centres at x = 110, 300, 490, 680, 870 (190 apart).
+       Rows: pipeline y=90, side inputs/outputs y=220, evaluation y=340, delivery y=450.
+       Every box is 130 wide, every connector is horizontal or vertical. -->
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="980" height="540" fill="#ffffff"/>
+  <text x="490" y="36" text-anchor="middle" font-size="20" font-weight="600" fill="#0f172a">PulseOps architecture</text>
+
+  <!-- row labels -->
+  <g font-size="11" fill="#94a3b8" font-weight="600">
+    <text x="12" y="80">PIPELINE</text>
+    <text x="12" y="330">MEASUREMENT</text>
+    <text x="12" y="440">DELIVERY</text>
+  </g>
+  <line x1="12" y1="310" x2="968" y2="310" stroke="#e2e8f0"/>
+  <line x1="12" y1="420" x2="968" y2="420" stroke="#e2e8f0"/>
+
+  <g font-size="14" fill="#0f172a" text-anchor="middle">
+    <!-- row 1: pipeline -->
+    <rect x="45" y="90" width="130" height="64" rx="10" fill="#e0f2fe" stroke="#0284c7"/>
+    <text x="110" y="117" font-weight="600">Simulator</text>
+    <text x="110" y="136" font-size="11" fill="#334155">metrics + faults</text>
+
+    <rect x="235" y="90" width="130" height="64" rx="10" fill="#e0f2fe" stroke="#0284c7"/>
+    <text x="300" y="117" font-weight="600">Detector</text>
+    <text x="300" y="136" font-size="11" fill="#334155">z-score, 3-min streak</text>
+
+    <rect x="425" y="90" width="130" height="64" rx="10" fill="#e0f2fe" stroke="#0284c7"/>
+    <text x="490" y="117" font-weight="600">Root-cause rank</text>
+    <text x="490" y="136" font-size="11" fill="#334155">3 rules + reasons</text>
+
+    <rect x="615" y="90" width="130" height="64" rx="10" fill="#e0f2fe" stroke="#0284c7"/>
+    <text x="680" y="117" font-weight="600">Report</text>
+    <text x="680" y="136" font-size="11" fill="#334155">template / local LLM</text>
+
+    <rect x="805" y="90" width="130" height="64" rx="10" fill="#fef3c7" stroke="#d97706"/>
+    <text x="870" y="117" font-weight="600">Streamlit app</text>
+    <text x="870" y="136" font-size="11" fill="#334155">human approves</text>
+
+    <!-- row 2: side inputs / outputs -->
+    <rect x="615" y="220" width="130" height="56" rx="10" fill="#f1f5f9" stroke="#64748b"/>
+    <text x="680" y="244" font-weight="600">Runbooks</text>
+    <text x="680" y="262" font-size="11" fill="#334155">one per service</text>
+
+    <rect x="805" y="220" width="130" height="56" rx="10" fill="#f1f5f9" stroke="#64748b"/>
+    <text x="870" y="244" font-weight="600">Audit log</text>
+    <text x="870" y="262" font-size="11" fill="#334155">every decision</text>
+
+    <!-- row 3: measurement -->
+    <rect x="235" y="340" width="320" height="56" rx="10" fill="#dcfce7" stroke="#16a34a"/>
+    <text x="395" y="364" font-weight="600">Evaluation</text>
+    <text x="395" y="382" font-size="11" fill="#334155">400 labelled incidents → detection, top-1 / top-3</text>
+
+    <rect x="615" y="340" width="130" height="56" rx="10" fill="#dcfce7" stroke="#16a34a"/>
+    <text x="680" y="364" font-weight="600">CI quality gate</text>
+    <text x="680" y="382" font-size="11" fill="#334155">fails if accuracy drops</text>
+
+    <!-- row 4: delivery -->
+    <rect x="425" y="450" width="130" height="56" rx="10" fill="#ede9fe" stroke="#7c3aed"/>
+    <text x="490" y="474" font-weight="600">GitHub</text>
+    <text x="490" y="492" font-size="11" fill="#334155">code + Actions CI</text>
+
+    <rect x="615" y="450" width="130" height="56" rx="10" fill="#ede9fe" stroke="#7c3aed"/>
+    <text x="680" y="474" font-weight="600">Docker image</text>
+    <text x="680" y="492" font-size="11" fill="#334155">built in CI</text>
+
+    <rect x="805" y="450" width="130" height="56" rx="10" fill="#ede9fe" stroke="#7c3aed"/>
+    <text x="870" y="474" font-weight="600">Render</text>
+    <text x="870" y="492" font-size="11" fill="#334155">hosts the app</text>
+  </g>
+
+  <!-- connectors -->
+  <g stroke="#475569" stroke-width="1.6" fill="none" marker-end="url(#arrow)">
+    <path d="M175,122 H233"/>
+    <path d="M365,122 H423"/>
+    <path d="M555,122 H613"/>
+    <path d="M745,122 H803"/>
+    <path d="M680,220 V156"/>
+    <path d="M870,154 V218"/>
+    <path d="M110,154 V368 H233"/>
+    <path d="M555,368 H613"/>
+    <path d="M555,478 H613"/>
+    <path d="M745,478 H803"/>
+  </g>
+  <g stroke="#16a34a" stroke-width="1.4" stroke-dasharray="5 4" fill="none" marker-end="url(#arrow)">
+    <path d="M300,340 V156"/>
+    <path d="M490,340 V156"/>
+  </g>
+
+  <!-- connector labels: centred in the gap they describe -->
+  <g font-size="11" fill="#475569" text-anchor="middle">
+    <text x="204" y="112">metrics</text>
+    <text x="394" y="112">anomalies</text>
+    <text x="584" y="112">suspects</text>
+    <text x="774" y="112">report</text>
+    <text x="584" y="358">scores</text>
+  </g>
+  <g font-size="11" fill="#475569">
+    <text x="688" y="192">action</text>
+    <text x="878" y="192">decision</text>
+    <text x="118" y="250">true root cause</text>
+    <text x="308" y="250" fill="#16a34a">reuses</text>
+    <text x="498" y="250" fill="#16a34a">reuses</text>
+  </g>
+</svg>
