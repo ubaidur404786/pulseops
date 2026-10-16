@@ -90,6 +90,8 @@ LIGHT_OVERRIDES = """
 [data-testid="stExpander"] details, [data-testid="stVerticalBlockBorderWrapper"] {
   background:#ffffff; border-color:#e2e8f0;}
 [data-testid="stExpander"] summary, [data-testid="stExpander"] summary * {color:#1e293b;}
+[data-testid="stExpander"] summary {background:#f8fafc !important;}
+[data-testid="stMain"] code {background:#f1f5f9; color:#0f172a;}
 button[data-baseweb="tab"] p {color:#334155;}
 [data-testid="stSelectbox"] div:has(> input), [role="listbox"], [role="option"] {
   background:#ffffff; color:#1e293b;}
