@@ -2,7 +2,7 @@
 
 **Finds which service broke, explains why, and asks a human before fixing anything.**
 
-<!-- TODO: demo GIF here (record after review) -->
+![PulseOps dashboard: a database error burst, traced to its root cause](docs/figures/dashboard.png)
 
 > **Status: work in progress.** The core pipeline works and is measured. Live demo,
 > demo video and real Prometheus data are still being added.

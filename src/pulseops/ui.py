@@ -29,9 +29,9 @@ ICONS = {
 
 # Status -> (label, text colour, background colour)
 STATUS = {
-    "root": ("Root cause", "#b91c1c", "#fee2e2"),
-    "affected": ("Degraded", "#b45309", "#fef3c7"),
-    "ok": ("Operational", "#15803d", "#dcfce7"),
+    "root": ("Root cause", "#fca5a5", "#450a0a"),
+    "affected": ("Degraded", "#fcd34d", "#422006"),
+    "ok": ("Operational", "#86efac", "#052e16"),
 }
 
 CSS = """
@@ -39,31 +39,31 @@ CSS = """
 .block-container, [data-testid="stMainBlockContainer"] {padding-top: 4.5rem; max-width: 1280px;}
 #MainMenu, footer {visibility: hidden;}
 .po-top {display:flex; align-items:center; justify-content:space-between;
-  border-bottom:1px solid #e2e8f0; padding-bottom:.8rem; margin-bottom:1rem;}
+  border-bottom:1px solid #1e293b; padding-bottom:.8rem; margin-bottom:1rem;}
 .po-brand {display:flex; align-items:center; gap:.6rem; font-weight:700; font-size:1.25rem;
-  color:#0f172a;}
-.po-crumb {color:#64748b; font-size:.85rem; font-weight:400;}
+  color:#f1f5f9;}
+.po-crumb {color:#94a3b8; font-size:.85rem; font-weight:400;}
 .po-pill {display:inline-flex; align-items:center; gap:.35rem; padding:.2rem .65rem;
   border-radius:999px; font-size:.78rem; font-weight:600;}
 .po-tiles {display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:.75rem;
   margin-bottom:1rem;}
 @media (max-width: 900px) {.po-tiles {grid-template-columns:repeat(2, minmax(0,1fr));}}
-.po-tile {border:1px solid #e2e8f0; border-radius:10px; padding:.8rem .9rem; background:#fff;}
-.po-tile-head {display:flex; align-items:center; gap:.4rem; color:#64748b; font-size:.75rem;
+.po-tile {border:1px solid #1e293b; border-radius:10px; padding:.8rem .9rem; background:#111a2e;}
+.po-tile-head {display:flex; align-items:center; gap:.4rem; color:#94a3b8; font-size:.75rem;
   text-transform:uppercase; letter-spacing:.04em; font-weight:600;}
-.po-tile-value {font-size:1.45rem; font-weight:700; color:#0f172a; margin-top:.3rem;}
-.po-tile-sub {font-size:.78rem; color:#64748b;}
-.po-section {display:flex; align-items:center; gap:.45rem; font-weight:650; color:#0f172a;
+.po-tile-value {font-size:1.45rem; font-weight:700; color:#f1f5f9; margin-top:.3rem;}
+.po-tile-sub {font-size:.78rem; color:#94a3b8;}
+.po-section {display:flex; align-items:center; gap:.45rem; font-weight:650; color:#f1f5f9;
   font-size:1rem; margin:.4rem 0 .5rem;}
 .po-table {width:100%; border-collapse:collapse; font-size:.88rem; margin-bottom:1rem;}
-.po-table th {text-align:left; color:#64748b; font-weight:600; font-size:.75rem;
-  text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid #e2e8f0;
+.po-table th {text-align:left; color:#94a3b8; font-weight:600; font-size:.75rem;
+  text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid #1e293b;
   padding:.5rem .6rem;}
-.po-table td {border-bottom:1px solid #f1f5f9; padding:.55rem .6rem; color:#0f172a;}
+.po-table td {border-bottom:1px solid #1e293b; padding:.55rem .6rem; color:#e2e8f0;}
 .po-dot {display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:.5rem;}
 .po-step {display:flex; gap:.7rem; margin:.45rem 0;}
-.po-num {flex:none; width:22px; height:22px; border-radius:50%; background:#e0f2fe;
-  color:#0369a1; font-size:.75rem; font-weight:700; display:flex; align-items:center;
+.po-num {flex:none; width:22px; height:22px; border-radius:50%; background:#0c4a6e;
+  color:#bae6fd; font-size:.75rem; font-weight:700; display:flex; align-items:center;
   justify-content:center;}
 </style>
 """
@@ -85,18 +85,18 @@ def pill(text: str, fg: str, bg: str, icon_name: str | None = None) -> str:
 
 def top_bar(incident: str, is_incident: bool) -> str:
     status = (
-        pill("Active incident", "#b91c1c", "#fee2e2", "alert")
+        pill("Active incident", "#fca5a5", "#450a0a", "alert")
         if is_incident
-        else pill("All systems operational", "#15803d", "#dcfce7", "check")
+        else pill("All systems operational", "#86efac", "#052e16", "check")
     )
     return (
-        f'<div class="po-top"><div class="po-brand">{icon("pulse", "#0284c7", 26)}PulseOps'
+        f'<div class="po-top"><div class="po-brand">{icon("pulse", "#38bdf8", 26)}PulseOps'
         f'<span class="po-crumb">/ Incidents / {html.escape(incident)}</span></div>'
         f"{status}</div>"
     )
 
 
-def tile(icon_name: str, label: str, value: str, sub: str = "", color: str = "#64748b") -> str:
+def tile(icon_name: str, label: str, value: str, sub: str = "", color: str = "#94a3b8") -> str:
     return (
         f'<div class="po-tile"><div class="po-tile-head">{icon(icon_name, color, 14)}'
         f'{html.escape(label)}</div><div class="po-tile-value">{html.escape(value)}</div>'
@@ -109,7 +109,7 @@ def tiles(items: list[str]) -> str:
 
 
 def section(icon_name: str, title: str) -> str:
-    return f'<div class="po-section">{icon(icon_name, "#0284c7", 18)}{html.escape(title)}</div>'
+    return f'<div class="po-section">{icon(icon_name, "#38bdf8", 18)}{html.escape(title)}</div>'
 
 
 def service_table(rows: list[dict]) -> str:

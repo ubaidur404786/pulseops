@@ -35,10 +35,22 @@ def sidebar() -> tuple[str | None, str, int]:
     with st.sidebar:
         st.markdown("#### Scenario")
         st.caption("Choose what breaks. Everything below updates instantly.")
-        kind = st.selectbox("Fault type", [HEALTHY, *FAULTS])
+        # Optional link presets, e.g. ?fault=error_burst&service=database, so a scenario
+        # can be shared (and screenshotted) without clicking.
+        kinds = [HEALTHY, *FAULTS]
+        preset_kind = st.query_params.get("fault", HEALTHY)
+        preset_service = st.query_params.get("service", "database")
+        kind = st.selectbox(
+            "Fault type", kinds, index=kinds.index(preset_kind) if preset_kind in kinds else 0
+        )
         if kind != HEALTHY:
             st.caption(FAULT_HELP[kind])
-        service = st.selectbox("Broken service", SERVICES, index=4, disabled=kind == HEALTHY)
+        service = st.selectbox(
+            "Broken service",
+            SERVICES,
+            index=SERVICES.index(preset_service) if preset_service in SERVICES else 4,
+            disabled=kind == HEALTHY,
+        )
         seed = st.number_input(
             "Seed",
             min_value=0,
@@ -122,7 +134,7 @@ items = [
         "Status",
         "Incident" if anomalies else "Healthy",
         "anomalies found" if anomalies else "no anomalies",
-        "#b91c1c" if anomalies else "#15803d",
+        "#f87171" if anomalies else "#4ade80",
     ),
     ui.tile("activity", "Anomalous metrics", str(len(anomalies)), "of 15 watched"),
     ui.tile(
@@ -143,7 +155,7 @@ if scenario.fault:
             "Matches truth",
             "Yes" if correct else "No",
             f"real cause: {scenario.fault.service}",
-            "#15803d" if correct else "#b91c1c",
+            "#4ade80" if correct else "#f87171",
         )
     )
 else:
@@ -153,7 +165,7 @@ else:
             "False alarm",
             "Yes" if anomalies else "No",
             "healthy run",
-            "#b91c1c" if anomalies else "#15803d",
+            "#f87171" if anomalies else "#4ade80",
         )
     )
 st.markdown(ui.tiles(items), unsafe_allow_html=True)
