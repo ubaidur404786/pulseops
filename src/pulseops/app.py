@@ -216,9 +216,14 @@ with tab_metrics:
             )
     if scenario.deploys:
         st.markdown(ui.section("rocket", "Deploys"), unsafe_allow_html=True)
-        st.dataframe(
-            [{"service": d.service, "minute": d.step} for d in scenario.deploys],
-            hide_index=True,
+        st.markdown(
+            ui.table(
+                [
+                    {"service": d.service, "minute": d.step}
+                    for d in sorted(scenario.deploys, key=lambda d: d.step)
+                ]
+            ),
+            unsafe_allow_html=True,
         )
 
 with tab_rca:
@@ -271,6 +276,6 @@ with tab_audit:
     st.caption("Every approve / reject decision, newest first. Resets when the server restarts.")
     log = read_log()
     if log:
-        st.dataframe(log[::-1], hide_index=True, use_container_width=True)
+        st.markdown(ui.table(log[::-1]), unsafe_allow_html=True)
     else:
         st.write("No decisions yet. Approve or reject an action in the Response tab.")

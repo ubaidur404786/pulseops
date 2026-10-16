@@ -92,6 +92,9 @@ LIGHT_OVERRIDES = """
 [data-testid="stExpander"] summary, [data-testid="stExpander"] summary * {color:#1e293b;}
 [data-testid="stExpander"] summary {background:#f8fafc !important;}
 [data-testid="stMain"] code {background:#f1f5f9; color:#0f172a;}
+[data-testid="stBaseButton-secondary"] {background:#ffffff; color:#1e293b; border-color:#cbd5e1;}
+[data-testid="stBaseButton-primary"] {background:#0284c7; color:#ffffff; border-color:#0284c7;}
+[data-testid="stBaseButton-primary"] p {color:#ffffff;}
 button[data-baseweb="tab"] p {color:#334155;}
 [data-testid="stSelectbox"] div:has(> input), [role="listbox"], [role="option"] {
   background:#ffffff; color:#1e293b;}
@@ -212,6 +215,18 @@ def service_table(rows: list[dict]) -> str:
         "<th>Depends on</th><th>Anomalous metrics</th></tr></thead>"
         f"<tbody>{body}</tbody></table>"
     )
+
+
+def table(rows: list[dict]) -> str:
+    """A plain themed table from a list of dicts (keys become the header)."""
+    if not rows:
+        return ""
+    header = "".join(f"<th>{html.escape(str(k))}</th>" for k in rows[0])
+    body = "".join(
+        "<tr>" + "".join(f"<td>{html.escape(str(v))}</td>" for v in row.values()) + "</tr>"
+        for row in rows
+    )
+    return f'<table class="po-table"><thead><tr>{header}</tr></thead><tbody>{body}</tbody></table>'
 
 
 def steps(items: list[str]) -> str:
