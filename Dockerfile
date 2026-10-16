@@ -6,6 +6,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.21 /uv /bin/uv
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
+COPY .streamlit ./.streamlit
 RUN uv sync --frozen --no-dev
 
 # Don't run as root inside the container.

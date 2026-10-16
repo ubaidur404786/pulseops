@@ -7,7 +7,13 @@
 > **Status: work in progress.** The core pipeline works and is measured. Live demo,
 > demo video and real Prometheus data are still being added.
 
-- **Live app:** being deployed on Render (link coming soon)
+- **Live app:** https://pulseops-ecck.onrender.com (free plan: first load can take ~1 minute)
+
+**Using the live app (1 minute):** pick a **Fault** and a **Broken service** in the
+sidebar (try `error_burst` + `database`). Read the KPI cards and the service-health row,
+check the **Root cause** tab for the reasons, then **Approve** or **Reject** the proposed
+fix in the **Incident** tab. The "Truth" box shows the real answer, so you can check
+PulseOps. A full guide is built into the app.
 - **Demo video:** not recorded yet
 
 ## The problem
